@@ -1,0 +1,30 @@
+[project]
+name = "plasmidkit"
+version = "0.1.0"
+description = "Fast Python library for plasmid annotation and makeability scoring"
+authors = [
+  {name = "PlasmidKit Maintainers", email = "maintainers@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "biopython>=1.85",
+  "typer>=0.9",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+fast = ["orjson>=3.9.0"]
+full = ["moods-python>=1.9.4"]
+
+[project.scripts]
+plasmidkit = "plasmidkit.cli:main"
+
+[tool.uv]
+index-url = "https://pypi.org/simple"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
