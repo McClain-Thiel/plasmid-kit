@@ -3,3 +3,16 @@ __pycache__/
 .venv/
 .pytest_cache/
 
+.venv/
+plasmidkit/data/_cache/**
+*.dmnd
+*.cm*
+*.ndb
+*.nhr
+*.nin
+*.nog
+*.nos
+*.not
+*.nsq
+*.nt*
+*.tar.gz
