@@ -6,7 +6,7 @@ from typing import Dict, Iterable, List, Mapping
 from ..types import Feature
 
 
-_DEFAULT_ORDER = ["ori", "marker", "promoter", "terminator", "mcs"]
+_DEFAULT_ORDER = ["ori", "marker", "promoter", "terminator", "mcs", "orf_prodigal"]
 
 
 def get_detector(name: str):

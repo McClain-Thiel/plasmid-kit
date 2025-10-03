@@ -12,7 +12,7 @@ def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
     for entry in terminator_entries:
         motifs = entry.get("motifs", [])
         for motif in motifs:
-            for pos in find_motifs(sequence, [motif]):
+            for pos in find_motifs(sequence, [motif], circular=True):
                 features.append(
                     Feature(
                         type="terminator",

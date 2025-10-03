@@ -1,0 +1,12 @@
+biopython>=1.85
+typer>=0.9
+pyyaml>=6.0
+pyahocorasick>=2.1.0
+edlib>=1.3.9
+pyrodigal>=3.4.0
+
+[fast]
+orjson>=3.9.0
+
+[full]
+moods-python>=1.9.4

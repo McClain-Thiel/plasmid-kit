@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Mapping, Sequence
+from pathlib import Path
+from typing import Iterable, List, Mapping, Sequence, Optional
 
 from Bio.SeqRecord import SeqRecord
 
@@ -24,31 +25,40 @@ __all__ = [
 ]
 
 
-def annotate(record: SeqRecord, db: str = "engineered-core@1.0.0", detectors: Iterable[str] | None = None) -> List[Feature]:
+def annotate(
+    record: SeqRecord | str | Path,
+    db: str = "engineered-core@1.0.0",
+    detectors: Iterable[str] | None = None,
+    is_sequence: Optional[bool] = None,
+) -> List[Feature]:
     artifacts = manager.get_artifacts(db)
-    return annotate_record(record, artifacts, detectors)
+    return annotate_record(record, artifacts, detectors, is_sequence=is_sequence)
 
 
 def score(
-    record: SeqRecord,
+    record: SeqRecord | str | Path,
     annotations: Sequence[Feature] | None = None,
     db: str = "engineered-core@1.0.0",
+    is_sequence: Optional[bool] = None,
 ) -> Mapping[str, object]:
     artifacts = manager.get_artifacts(db)
-    features = list(annotations) if annotations is not None else annotate_record(record, artifacts, None)
-    return compute_score(record, features, artifacts)
+    normalized_record = record if isinstance(record, SeqRecord) else load_record(record, is_sequence=is_sequence)
+    features = list(annotations) if annotations is not None else annotate_record(normalized_record, artifacts, None)
+    return compute_score(normalized_record, features, artifacts)
 
 
 def annotate_and_score(
-    record: SeqRecord,
+    record: SeqRecord | str | Path,
     db: str = "engineered-core@1.0.0",
     detectors: Iterable[str] | None = None,
+    is_sequence: Optional[bool] = None,
 ) -> Mapping[str, object]:
-    annotations = annotate(record, db=db, detectors=detectors)
-    score_report = score(record, annotations=annotations, db=db)
+    normalized_record = record if isinstance(record, SeqRecord) else load_record(record, is_sequence=is_sequence)
+    annotations = annotate(normalized_record, db=db, detectors=detectors)
+    score_report = score(normalized_record, annotations=annotations, db=db)
     return {
-        "sequence_id": record.id,
-        "length": len(record.seq),
+        "sequence_id": normalized_record.id,
+        "length": len(normalized_record.seq),
         "annotations": [feature.to_dict() for feature in annotations],
         "score": score_report,
         "db": db,

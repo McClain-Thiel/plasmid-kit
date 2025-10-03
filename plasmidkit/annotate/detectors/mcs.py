@@ -13,7 +13,7 @@ def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
         motif = site.get("sequence")
         if not motif:
             continue
-        positions = find_motifs(sequence, [motif])
+        positions = find_motifs(sequence, [motif], circular=True)
         for pos in positions:
             features.append(
                 Feature(
