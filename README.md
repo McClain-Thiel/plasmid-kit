@@ -85,3 +85,24 @@ We curate signatures from public sources and record per‑entry citations in `pl
 - CARD (Comprehensive Antibiotic Resistance Database) protein homolog models: we ingested your curated JSON of bacterial AMR determinants (`~/Downloads/card_bacterial_amr_motifs.json`). PHM entries represent genes conferring resistance by presence (e.g., beta‑lactamases, aminoglycoside‑modifying enzymes, van operon genes). We record CARD as the citation for these markers.
 - Restriction enzyme recognition motifs from standard literature/catalogs
 - pLannotate bundle indices (SnapGene/FPbase/Swiss‑Prot indices; Rfam models) for provenance
+
+## Caches and large data
+
+We do not store large database files in git. They are cached under `plasmidkit/data/_cache/` and ignored by `.gitignore`.
+
+- Default cache directory can be overridden with `PLASMIDKIT_CACHE`.
+- To prefetch or prepare caches for offline use:
+
+```bash
+uv run python -c "import plasmidkit as pk; pk.add_registry('engineered-core', 'plasmidkit/data/engineered_core_signatures.json'); pk.set_cache_dir('plasmidkit/data/_cache'); print(pk.set_offline(False))"
+# Future: provide scripts to download/build optional indices
+```
+
+## Pushing after history cleanup
+
+If you see a stale info or non fast-forward error after cleaning large files from history, fetch and force-update the remote ref:
+
+```bash
+git fetch origin
+git push -u origin +main
+```
