@@ -25,9 +25,23 @@ plasmidkit = "plasmidkit.cli:main"
 
 [tool.uv]
 index-url = "https://pypi.org/simple"
+package = true
 
 [tool.black]
 line-length = 100
 
 [tool.ruff]
 line-length = 100
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["plasmidkit*"]
+
+[tool.setuptools.package-data]
+"plasmidkit.data" = ["engineered_core_signatures.json"]

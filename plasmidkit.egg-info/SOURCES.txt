@@ -28,6 +28,7 @@ plasmidkit/annotate/detectors/utils.py
 plasmidkit/cache/manager.py
 plasmidkit/cache/registry.py
 plasmidkit/data/__init__.py
+plasmidkit/data/engineered_core_signatures.json
 plasmidkit/scoring/calculator.py
 plasmidkit/scoring/rules.py
 tests/test_api.py

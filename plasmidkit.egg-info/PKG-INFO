@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: plasmidkit
 Version: 0.1.0
 Summary: Fast Python library for plasmid annotation and makeability scoring
-Author-email: PlasmidKit Maintainers <maintainers@example.com>
+Author-email: PlasmidKit Maintainers <mcclain.thiel@gmail.com>
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: biopython>=1.85
@@ -10,7 +10,7 @@ Requires-Dist: typer>=0.9
 Requires-Dist: pyyaml>=6.0
 Requires-Dist: pyahocorasick>=2.1.0
 Requires-Dist: edlib>=1.3.9
-Requires-Dist: pyrodigal>=3.4.0
+Requires-Dist: pyrodigal>=3.6.3
 Provides-Extra: fast
 Requires-Dist: orjson>=3.9.0; extra == "fast"
 Provides-Extra: full
@@ -18,7 +18,7 @@ Requires-Dist: moods-python>=1.9.4; extra == "full"
 
 # PlasmidKit
 
-PlasmidKit is a Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly "makeability" score. The implementation focuses on fast local execution, a clear scoring breakdown, and extensibility through pluggable detectors and registries.
+PlasmidKit is a fast Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly “makeability” score. It focuses on engineered plasmids (2–10 kb typical), checks that backbone essentials are present, and produces an interpretable score.
 
 ## Quick start
 
@@ -29,49 +29,99 @@ uv run plasmidkit --help
 
 Annotate and score a plasmid sequence in a single step:
 
-```bash
-uv run plasmidkit score tests/data/example.fasta --out-json report.json
-```
 
-## Features
+## What it evaluates (backbone)
 
-- Pure Python API with optional extras for accelerated motif scanning.
-- Deterministic annotation and scoring with transparent rule contributions.
-- Offline-friendly cache layout with HuggingFace-style directories.
-- CLI utilities for annotation, scoring, cache management, and data prefetch.
-- Simple exporter helpers for JSON, GFF3, and minimal GenBank output.
+- ORI present (e.g., ColE1/pMB1, p15A, pSC101, RSF)
+- Selectable marker present (e.g., AmpR/blaTEM, KanR/nptII, CmR/cat)
+- Promoter(s) present (e.g., lac, T7) and optional terminators
+- At least one plausible ORF (via Prodigal), no identity assignment required
+- Synthesis/assembly hygiene: length/GC range, repeats, palindromes, homopolymers, forbidden motifs
 
-## Library usage
+## Minimal examples
 
+Python:
 ```python
+import json
 import plasmidkit as pk
-
-record = pk.load_record("tests/data/example.fasta")
-annotations = pk.annotate(record)
-score = pk.score(record, annotations=annotations)
-
-pk.export_json({"annotations": [feat.to_dict() for feat in annotations], "score": score}, "report.json")
+rec = pk.load_record("tests/data/pUC19.fasta")
+ants = pk.annotate(rec)
+rep = pk.score(rec, annotations=ants)
+print(json.dumps({"annotations": [a.to_dict() for a in ants[:5]]}, indent=2))
+print(json.dumps(rep, indent=2))
 ```
 
-## CLI usage
+Real outputs (pUC19, abridged):
 
+```json
+{
+  "annotations": [
+    {"type":"rep_origin","id":"ColE1","start":2314,"end":2903,"method":"motif"},
+    {"type":"rep_origin","id":"lac_promoter","start":540,"end":570,"method":"motif"},
+    {"type":"rep_origin","id":"AmpR_promoter","start":1213,"end":1242,"method":"motif"},
+    {"type":"rep_origin","id":"M13_reverse_primer","start":604,"end":623,"method":"motif"},
+    {"type":"rep_origin","id":"M13_forward20_primer","start":688,"end":705,"method":"motif"}
+  ]
+}
 ```
-plasmidkit annotate input.fasta --out-json annotations.json
-plasmidkit score input.fasta --out-json score.json
-plasmidkit fetch engineered-core@1.0.0
-plasmidkit cache list
+
+```json
+{
+  "total": 42.46,
+  "components": {
+    "length": 15.0,
+    "gc": 10.0,
+    "repeats": -0.54,
+    "palindromes": -2.0,
+    "homopolymers": -0.0,
+    "forbidden_motifs": -2.0,
+    "ori_recognition": 8.0,
+    "marker_recognition": 6.0,
+    "promoter_terminator": 4.0,
+    "mcs_uniqueness": 6.0,
+    "burden": 0.0
+  }
+}
 ```
 
-## Development
+Note: ORF prediction for this small demo may be empty depending on thresholds and DB content; backbone signals still contribute to the score.
 
-Install dependencies with [`uv`](https://docs.astral.sh/uv/):
+## How it works (short)
 
-```bash
-uv sync
-uv run --with pytest python -m pytest
-uv run ruff check .
-```
+- Exact DNA motifs using a multi‑pattern scanner (`pyahocorasick`); circular wrap supported
+- ORFs via Prodigal (`pyrodigal`) to ensure protein‑coding potential exists (no protein ID)
+- Sequence heuristics: GC/length/repeats/palindromes/homopolymers; forbidden motifs list
+- Score = synthesis (hygiene) + assembly/maintenance (ori/marker/promoter/terminator/MCS/burden)
 
 ## Data sources
 
-The repository ships with a lightweight `engineered-core@1.0.0` dataset that covers common replicons, selectable markers, promoters, terminators, restriction sites, and forbidden motifs used by the built-in heuristics. Additional registries can be added at runtime with `plasmidkit.add_registry()`.
+We curate signatures from public sources and record per‑entry citations in `plasmidkit/data/engineered_core_signatures.json`.
+
+- PlasMapper features API (promoters/terminators/origins): portal https://plasmapper.wishartlab.com/search, API `https://plasmapper.ca/api/features`
+- NCBI ori sequences via query `origin_of_replication[All Fields] AND (bacteria[filter] AND plasmid[filter])` (we ingested `~/Downloads/plasmid_oris.json`, citing `https://www.ncbi.nlm.nih.gov/nuccore/<ACCESSION>`)
+- UniProt (Swiss‑Prot) for reviewed markers (e.g., blaTEM-1 P62593, nptII P00552): `https://rest.uniprot.org/uniprotkb/{accession}`
+- CARD (Comprehensive Antibiotic Resistance Database) protein homolog models: we ingested your curated JSON of bacterial AMR determinants (`~/Downloads/card_bacterial_amr_motifs.json`). PHM entries represent genes conferring resistance by presence (e.g., beta‑lactamases, aminoglycoside‑modifying enzymes, van operon genes). We record CARD as the citation for these markers.
+- Restriction enzyme recognition motifs from standard literature/catalogs
+- pLannotate bundle indices (SnapGene/FPbase/Swiss‑Prot indices; Rfam models) for provenance
+
+## Caches and large data
+
+We do not store large database files in git. They are cached under `plasmidkit/data/_cache/` and ignored by `.gitignore`.
+
+- Default cache directory can be overridden with `PLASMIDKIT_CACHE`.
+- To prefetch or prepare caches for offline use:
+
+```bash
+uv run python -m plasmidkit.cli bootstrap --cache-dir plasmidkit/data/_cache
+```
+
+This warms up the built-in `engineered-core@1.0.0` database (stored in the repo as `plasmidkit/data/engineered_core_signatures.json`). Optional external indices (e.g., BLAST/Rfam/SnapGene/SwissProt) are not included; place them under the cache dir if you have them.
+
+## Pushing after history cleanup
+
+If you see a stale info or non fast-forward error after cleaning large files from history, fetch and force-update the remote ref:
+
+```bash
+git fetch origin
+git push -u origin +main
+```
