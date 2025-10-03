@@ -94,9 +94,10 @@ We do not store large database files in git. They are cached under `plasmidkit/d
 - To prefetch or prepare caches for offline use:
 
 ```bash
-uv run python -c "import plasmidkit as pk; pk.add_registry('engineered-core', 'plasmidkit/data/engineered_core_signatures.json'); pk.set_cache_dir('plasmidkit/data/_cache'); print(pk.set_offline(False))"
-# Future: provide scripts to download/build optional indices
+uv run python -m plasmidkit.cli bootstrap --cache-dir plasmidkit/data/_cache
 ```
+
+This warms up the built-in `engineered-core@1.0.0` database (stored in the repo as `plasmidkit/data/engineered_core_signatures.json`). Optional external indices (e.g., BLAST/Rfam/SnapGene/SwissProt) are not included; place them under the cache dir if you have them.
 
 ## Pushing after history cleanup
 

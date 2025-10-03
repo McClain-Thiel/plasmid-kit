@@ -86,6 +86,25 @@ def cache(action: str = typer.Argument(..., help="list or purge")) -> None:
         raise typer.BadParameter("Action must be 'list' or 'purge'")
 
 
+@app.command()
+def bootstrap(
+    cache_dir: Optional[Path] = typer.Option(None, help="Set cache directory"),
+    offline: bool = typer.Option(False, help="Toggle offline mode (no remote fetches)"),
+) -> None:
+    artifacts = api.bootstrap_data(str(cache_dir) if cache_dir else None, offline)
+    typer.echo(
+        json.dumps(
+            {
+                "cache_dir": str(manager.get_cache_dir()),
+                "offline": offline,
+                "db": "engineered-core@1.0.0",
+                "keys": list(artifacts.keys())[:8],
+            },
+            indent=2,
+        )
+    )
+
+
 def main() -> None:
     app()
 

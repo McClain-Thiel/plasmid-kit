@@ -22,6 +22,7 @@ __all__ = [
     "set_cache_dir",
     "set_offline",
     "add_registry",
+    "bootstrap_data",
 ]
 
 
@@ -68,3 +69,22 @@ def annotate_and_score(
 set_cache_dir = manager.set_cache_dir
 set_offline = manager.set_offline
 add_registry = manager.add_registry
+
+
+def bootstrap_data(cache_dir: Optional[str] = None, offline: Optional[bool] = None) -> Mapping[str, object]:
+    """Prepare local caches and warm up the default database.
+
+    - Optionally set a cache directory
+    - Optionally toggle offline mode
+    - Ensure cache dir exists and load the built-in engineered-core DB
+
+    Returns the loaded database artifacts mapping.
+    """
+    if cache_dir is not None:
+        manager.set_cache_dir(cache_dir)
+    if offline is not None:
+        manager.set_offline(bool(offline))
+    manager.ensure_cache_ready()
+    # Warm up default DB into memory (built-in JSON)
+    artifacts = manager.get_artifacts("engineered-core@1.0.0")
+    return artifacts
