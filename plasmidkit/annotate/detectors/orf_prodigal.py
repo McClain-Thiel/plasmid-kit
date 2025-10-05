@@ -1,29 +1,43 @@
 from __future__ import annotations
 
 from typing import Dict, List
+import pyrodigal
+
 
 from ..types import Feature
 
 
 def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
-    try:
-        import pyrodigal
-    except Exception:  # pragma: no cover - optional dependency not installed
-        return []
 
     # Pyrodigal recommends passing bytes for performance
     seq_bytes = sequence.upper().encode("ascii", "ignore")
-    min_len_aa = int(db.get("orf_min_aa", 60)) if isinstance(db, dict) else 60
+    # Balanced sensitivity by default; tunable via DB
+    min_len_aa = int(db.get("orf_min_aa", 50)) if isinstance(db, dict) else 50
+    min_len_nt = int(db.get("orf_min_nt", 150)) if isinstance(db, dict) else 150
 
     # Use Prodigal in metagenomic mode for plasmids lacking training signal; prefer bacterial code 11.
     # Support multiple pyrodigal versions by trying both parameter names.
     try:
-        orf_finder = pyrodigal.GeneFinder(meta=True, closed=False, genetic_code=11)
+        orf_finder = pyrodigal.GeneFinder(
+            meta=True,
+            closed=False,
+            genetic_code=11,
+            min_gene=min_len_nt,
+        )
     except TypeError:
+        # Older versions may not support genetic_code/min_gene/translation_table
         try:
-            orf_finder = pyrodigal.GeneFinder(meta=True, closed=False, translation_table=11)
+            orf_finder = pyrodigal.GeneFinder(
+                meta=True,
+                closed=False,
+                translation_table=11,
+                min_gene=min_len_nt,
+            )
         except TypeError:
-            orf_finder = pyrodigal.GeneFinder(meta=True, closed=False)
+            try:
+                orf_finder = pyrodigal.GeneFinder(meta=True, closed=False, min_gene=min_len_nt)
+            except TypeError:
+                orf_finder = pyrodigal.GeneFinder(meta=True, closed=False)
     genes = orf_finder.find_genes(seq_bytes)
 
     features: List[Feature] = []
@@ -48,7 +62,7 @@ def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
                 strand=strand,
                 method="pyrodigal",
                 confidence=0.7,
-                evidence={"min_aa": min_len_aa},
+                evidence={"min_aa": min_len_aa, "min_nt": min_len_nt},
             )
         )
     return features
