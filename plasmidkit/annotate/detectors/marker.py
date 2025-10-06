@@ -48,6 +48,7 @@ def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
                     "motif": motif,
                     "position": pos,
                     "mismatches": mismatches,
+                    "role": "marker",
                 },
             )
         )
