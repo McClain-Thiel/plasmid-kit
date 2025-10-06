@@ -20,13 +20,21 @@ def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
             circular=True,
             include_rc=True,
         )
+        # Collapse strand duplicates: report one feature per span
+        spans: set[tuple[int, int]] = set()
         for pos, _motif, strand, mismatches in hits:
+            start = pos
+            end = pos + len(motif)
+            span = (start, end)
+            if span in spans:
+                continue
+            spans.add(span)
             features.append(
                 Feature(
                     type="restriction_site",
                     id=site["id"],
-                    start=pos,
-                    end=pos + len(motif),
+                    start=start,
+                    end=end,
                     strand=strand,
                     method="motif_fuzzy" if mismatches else "motif",
                     confidence=0.7,
