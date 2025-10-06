@@ -84,6 +84,10 @@ We curate signatures from public sources and record per‑entry citations in `pl
 - UniProt (Swiss‑Prot) for reviewed markers (e.g., blaTEM-1 P62593, nptII P00552): `https://rest.uniprot.org/uniprotkb/{accession}`
 - CARD (Comprehensive Antibiotic Resistance Database) protein homolog models: we ingested your curated JSON of bacterial AMR determinants (`~/Downloads/card_bacterial_amr_motifs.json`). PHM entries represent genes conferring resistance by presence (e.g., beta‑lactamases, aminoglycoside‑modifying enzymes, van operon genes). We record CARD as the citation for these markers.
 - Restriction enzyme recognition motifs from standard literature/catalogs
+- SnapGene Standard Features export (user‑provided “Exported Standard Features” .dna files)
+  - Primarily used for engineered backbone motifs: promoters, terminators, replication origins, and common selectable markers
+  - We ingest these as short DNA motifs for fast exact/fuzzy matching; this is not intended to be a comprehensive protein/CDS database
+  - Citations for these entries are recorded as `{ "database": "SnapGene", "source": "Standard Features export" }`
 - pLannotate bundle indices (SnapGene/FPbase/Swiss‑Prot indices; Rfam models) for provenance
 
 ## Caches and large data
@@ -98,6 +102,14 @@ uv run python -m plasmidkit.cli bootstrap --cache-dir plasmidkit/data/_cache
 ```
 
 This warms up the built-in `engineered-core@1.0.0` database (stored in the repo as `plasmidkit/data/engineered_core_signatures.json`). Optional external indices (e.g., BLAST/Rfam/SnapGene/SwissProt) are not included; place them under the cache dir if you have them.
+
+Note on CDS vs. backbone signals
+
+- PlasmidKit focuses on engineered backbone recognition (ori, marker presence, promoter/terminator motifs, MCS uniqueness) rather than exhaustive protein identity.
+- CDS features are detected via two complementary routes:
+  - Motif matches for common selectable markers (presence implies function)
+  - ORF prediction (via Prodigal/pyrodigal) to confirm plausible coding potential exists
+- The SnapGene Standard Features import is leveraged to strengthen backbone motif coverage; short or partial CDS fragments from reference maps may not be exhaustively represented as motifs.
 
 ## Pushing after history cleanup
 
