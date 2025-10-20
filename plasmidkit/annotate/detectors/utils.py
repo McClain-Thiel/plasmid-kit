@@ -255,3 +255,71 @@ def gc_content(sequence: str) -> float:
 def reverse_complement(sequence: str) -> str:
     complement = str.maketrans("ACGT", "TGCA")
     return sequence.upper().translate(complement)[::-1]
+
+
+def calculate_motif_confidence(motif_length: int, mismatches: int, max_mismatches: int) -> float:
+    """Calculate confidence score for a motif match using BLAST-like principles.
+    
+    Similar to BLAST, this considers:
+    1. Percent identity (matches/length)
+    2. Alignment length (longer = more statistically significant)
+    3. Match quality score (similar to bit score concept)
+    
+    The confidence represents how statistically significant the match is,
+    combining identity and length into a single score between 0.0 and 1.0.
+    
+    Args:
+        motif_length: Length of the matched motif (alignment length)
+        mismatches: Number of mismatches in the match
+        max_mismatches: Maximum allowed mismatches (tolerance parameter)
+        
+    Returns:
+        Confidence score between 0.0 and 1.0
+    """
+    if motif_length == 0:
+        return 0.0
+    
+    # Calculate percent identity (as fraction 0-1)
+    matches = motif_length - mismatches
+    pct_identity = matches / motif_length
+    
+    # BLAST-like scoring: Award points for matches, penalize for mismatches
+    # Similar to BLAST's raw score = (matches * match_score) - (mismatches * mismatch_penalty)
+    # Standard nucleotide BLAST uses +1 for match, -3 for mismatch
+    match_score = 1.0
+    mismatch_penalty = 2.0  # Slightly less harsh than BLAST's -3
+    
+    raw_score = (matches * match_score) - (mismatches * mismatch_penalty)
+    max_possible_score = motif_length * match_score
+    
+    # Normalized score (0-1 range, but can go negative for very poor matches)
+    normalized_score = raw_score / max_possible_score if max_possible_score > 0 else 0.0
+    normalized_score = max(0.0, normalized_score)  # Floor at 0
+    
+    # Length-dependent statistical significance bonus
+    # In BLAST, longer alignments with good identity are more significant
+    # Short perfect matches can occur by chance, long perfect matches are highly significant
+    if pct_identity >= 0.95:  # High identity matches
+        if motif_length >= 30:
+            length_bonus = 0.10  # Very long high-identity match = very confident
+        elif motif_length >= 20:
+            length_bonus = 0.07
+        elif motif_length >= 15:
+            length_bonus = 0.05
+        elif motif_length >= 10:
+            length_bonus = 0.03
+        else:
+            length_bonus = 0.0  # Short matches, even perfect, are less confident
+    else:  # Lower identity matches
+        # Reduce bonus for non-perfect matches
+        if motif_length >= 30:
+            length_bonus = 0.05
+        elif motif_length >= 20:
+            length_bonus = 0.03
+        else:
+            length_bonus = 0.0
+    
+    # Combine normalized score with length bonus
+    confidence = min(1.0, normalized_score + length_bonus)
+    
+    return round(confidence, 3)

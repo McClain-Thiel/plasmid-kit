@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, List
 
 from ..types import Feature
-from .utils import find_motifs_fuzzy_tagged
+from .utils import find_motifs_fuzzy_tagged, calculate_motif_confidence
 
 
 def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
@@ -29,6 +29,7 @@ def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
             if span in spans:
                 continue
             spans.add(span)
+            confidence = calculate_motif_confidence(len(motif), mismatches, max_mismatches=0)
             features.append(
                 Feature(
                     type="restriction_site",
@@ -37,8 +38,12 @@ def detect(sequence: str, db: Dict[str, object]) -> List[Feature]:
                     end=end,
                     strand=strand,
                     method="motif_fuzzy" if mismatches else "motif",
-                    confidence=0.7,
-                    evidence={"motif": motif, "mismatches": mismatches},
+                    confidence=confidence,
+                    evidence={
+                        "motif": motif,
+                        "mismatches": mismatches,
+                        "pct_identity": round((len(motif) - mismatches) / len(motif) * 100, 2),
+                    },
                 )
             )
     return features
