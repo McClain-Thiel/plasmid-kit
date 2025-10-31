@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from typing import Dict, Mapping, Sequence
 
 from Bio.SeqRecord import SeqRecord
@@ -109,14 +108,6 @@ def _ori_marker_scores(annotations: Sequence[Feature]) -> Dict[str, float]:
     return components
 
 
-def _mcs_score(annotations: Sequence[Feature]) -> float:
-    restriction_sites = [feature.id for feature in annotations if feature.type == "restriction_site"]
-    counts = Counter(restriction_sites)
-    unique_sites = sum(1 for count in counts.values() if count == 1)
-    capped = min(unique_sites, 3)
-    return capped * 2.0
-
-
 def _burden_penalty(length: float, annotations: Sequence[Feature]) -> float:
     ori_ids = {feature.id for feature in annotations if feature.type == "rep_origin"}
     promoter_ids = {feature.id for feature in annotations if feature.type == "promoter"}
@@ -134,7 +125,6 @@ def _burden_penalty(length: float, annotations: Sequence[Feature]) -> float:
 def assembly_components(record: SeqRecord, annotations: Sequence[Feature]) -> Dict[str, float]:
     sequence_length = float(len(record.seq))
     components = _ori_marker_scores(annotations)
-    components["mcs_uniqueness"] = _mcs_score(annotations)
     components["burden"] = _burden_penalty(sequence_length, annotations)
     return components
 

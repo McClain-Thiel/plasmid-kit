@@ -60,7 +60,6 @@ Real outputs (pUC19, abridged):
     "ori_recognition": 8.0,
     "marker_recognition": 6.0,
     "promoter_terminator": 4.0,
-    "mcs_uniqueness": 6.0,
     "burden": 0.0
   }
 }
@@ -73,7 +72,7 @@ Note: ORF prediction for this small demo may be empty depending on thresholds an
 - Exact DNA motifs using a multi‑pattern scanner (`pyahocorasick`); circular wrap supported
 - ORFs via Prodigal (`pyrodigal`) to ensure protein‑coding potential exists (no protein ID)
 - Sequence heuristics: GC/length/repeats/palindromes/homopolymers; forbidden motifs list
-- Score = synthesis (hygiene) + assembly/maintenance (ori/marker/promoter/terminator/MCS/burden)
+- Score = synthesis (hygiene) + assembly/maintenance (ori/marker/promoter/terminator/burden)
 
 ## Data sources
 
@@ -83,8 +82,7 @@ We curate signatures from public sources and record per‑entry citations in `pl
 - NCBI ori sequences via query `origin_of_replication[All Fields] AND (bacteria[filter] AND plasmid[filter])` (we ingested `~/Downloads/plasmid_oris.json`, citing `https://www.ncbi.nlm.nih.gov/nuccore/<ACCESSION>`)
 - UniProt (Swiss‑Prot) for reviewed markers (e.g., blaTEM-1 P62593, nptII P00552): `https://rest.uniprot.org/uniprotkb/{accession}`
 - CARD (Comprehensive Antibiotic Resistance Database) protein homolog models: we ingested your curated JSON of bacterial AMR determinants (`~/Downloads/card_bacterial_amr_motifs.json`). PHM entries represent genes conferring resistance by presence (e.g., beta‑lactamases, aminoglycoside‑modifying enzymes, van operon genes). We record CARD as the citation for these markers.
-- Restriction enzyme recognition motifs from standard literature/catalogs
-- SnapGene Standard Features export (user‑provided “Exported Standard Features” .dna files)
+- SnapGene Standard Features export (user‑provided "Exported Standard Features" .dna files)
   - Primarily used for engineered backbone motifs: promoters, terminators, replication origins, and common selectable markers
   - We ingest these as short DNA motifs for fast exact/fuzzy matching; this is not intended to be a comprehensive protein/CDS database
   - Citations for these entries are recorded as `{ "database": "SnapGene", "source": "Standard Features export" }`
@@ -105,7 +103,7 @@ This warms up the built-in `engineered-core@1.0.0` database (stored in the repo 
 
 Note on CDS vs. backbone signals
 
-- PlasmidKit focuses on engineered backbone recognition (ori, marker presence, promoter/terminator motifs, MCS uniqueness) rather than exhaustive protein identity.
+- PlasmidKit focuses on engineered backbone recognition (ori, marker presence, promoter/terminator motifs) rather than exhaustive protein identity.
 - CDS features are detected via two complementary routes:
   - Motif matches for common selectable markers (presence implies function)
   - ORF prediction (via Prodigal/pyrodigal) to confirm plausible coding potential exists
