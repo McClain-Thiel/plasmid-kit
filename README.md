@@ -69,7 +69,7 @@ Real outputs (pUC19, abridged):
 
 Note: ORF prediction for this small demo may be empty depending on thresholds and DB content; backbone signals still contribute to the score.
 
-## How it works (short)
+## How it works (short) 
 
 - Exact DNA motifs using a multi‑pattern scanner (`pyahocorasick`); circular wrap supported
 - ORFs via Prodigal (`pyrodigal`) to ensure protein‑coding potential exists (no protein ID)
