@@ -1,6 +1,8 @@
 # PlasmidKit
 
-PlasmidKit is a fast Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly “makeability” score. It focuses on engineered plasmids (2–10 kb typical), checks that backbone essentials are present, and produces an interpretable score.
+[![Tests](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml/badge.svg)](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml)
+
+PlasmidKit is a fast Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly "makeability" score. It focuses on engineered plasmids (2–10 kb typical), checks that backbone essentials are present, and produces an interpretable score.
 
 ## Quick start
 
