@@ -2,120 +2,298 @@
 
 [![Tests](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml/badge.svg)](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml)
 
-PlasmidKit is a fast Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly "makeability" score. It focuses on engineered plasmids (2–10 kb typical), checks that backbone essentials are present, and produces an interpretable score.
+PlasmidKit is a fast Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly "makeability" score. It focuses on engineered plasmids (2–10 kb typical), validates that backbone essentials are present, and produces an interpretable quality score.
 
-## Quick start
+## Quick Start
 
 ```bash
+# Install with uv
 uv sync
+
+# Run the CLI
 uv run plasmidkit --help
+
+# Or install with pip
+pip install -e .
 ```
 
-Annotate and score a plasmid sequence in a single step:
+## What It Evaluates
 
+**Backbone Components:**
+- **Origins of replication** (e.g., ColE1/pMB1, p15A, pSC101, RSF)
+- **Selectable markers** (e.g., AmpR/blaTEM, KanR/nptII, CmR/cat)
+- **Promoters** (e.g., lac, T7, CMV) and **terminators**
+- **ORFs** via Prodigal to confirm coding potential exists
 
-## What it evaluates (backbone)
+**Synthesis & Assembly Hygiene:**
+- Length optimization (2–6 kb ideal)
+- GC content (45–55% ideal)
+- Repeat sequences and palindromes
+- Homopolymer runs
+- Forbidden motifs (e.g., BsaI, BsmBI, NotI)
 
-- ORI present (e.g., ColE1/pMB1, p15A, pSC101, RSF)
-- Selectable marker present (e.g., AmpR/blaTEM, KanR/nptII, CmR/cat)
-- Promoter(s) present (e.g., lac, T7) and optional terminators
-- At least one plausible ORF (via Prodigal), no identity assignment required
-- Synthesis/assembly hygiene: length/GC range, repeats, palindromes, homopolymers, forbidden motifs
+## Example Usage
 
-## Minimal examples
+### Python API
 
-Python:
 ```python
 import json
 import plasmidkit as pk
-rec = pk.load_record("tests/data/pUC19.fasta")
-ants = pk.annotate(rec)
-rep = pk.score(rec, annotations=ants)
-print(json.dumps({"annotations": [a.to_dict() for a in ants[:5]]}, indent=2))
-print(json.dumps(rep, indent=2))
+
+# Load a plasmid sequence
+record = pk.load_record("tests/data/pUC19.fasta")
+
+# Annotate features
+annotations = pk.annotate(record)
+
+# Calculate quality score
+score_report = pk.score(record, annotations=annotations)
+
+# Display results
+print(f"Found {len(annotations)} features")
+print(f"Overall score: {score_report['total']:.1f}/100")
+
+# Show first few annotations
+for ann in annotations[:3]:
+    print(f"  {ann.type}: {ann.id} at {ann.start}-{ann.end}")
 ```
 
-Real outputs (pUC19, abridged):
+### Real Output (pUC19)
 
+**Annotations (first 5):**
 ```json
-{
-  "annotations": [
-    {"type":"rep_origin","id":"ColE1","start":2314,"end":2903,"method":"motif"},
-    {"type":"rep_origin","id":"lac_promoter","start":540,"end":570,"method":"motif"},
-    {"type":"rep_origin","id":"AmpR_promoter","start":1213,"end":1242,"method":"motif"},
-    {"type":"rep_origin","id":"M13_reverse_primer","start":604,"end":623,"method":"motif"},
-    {"type":"rep_origin","id":"M13_forward20_primer","start":688,"end":705,"method":"motif"}
-  ]
-}
+[
+  {
+    "type": "rep_origin",
+    "id": "ColE1",
+    "start": 2314,
+    "end": 2903,
+    "strand": "+",
+    "method": "motif_fuzzy",
+    "confidence": 1.0
+  },
+  {
+    "type": "rep_origin",
+    "id": "pBR322_origin",
+    "start": 2298,
+    "end": 2917,
+    "strand": "-",
+    "method": "motif_fuzzy",
+    "confidence": 1.0
+  },
+  {
+    "type": "marker",
+    "id": "TEM-116",
+    "start": 1283,
+    "end": 2144,
+    "strand": "+",
+    "method": "motif_fuzzy",
+    "confidence": 1.0
+  },
+  {
+    "type": "promoter",
+    "id": "AmpR_promoter_4",
+    "start": 1178,
+    "end": 1283,
+    "strand": "+",
+    "method": "motif_fuzzy",
+    "confidence": 1.0
+  },
+  {
+    "type": "promoter",
+    "id": "lac_promoter",
+    "start": 540,
+    "end": 569,
+    "strand": "-",
+    "method": "motif_fuzzy",
+    "confidence": 1.0
+  }
+]
 ```
 
+**Score Report:**
 ```json
 {
-  "total": 42.46,
+  "total": 22.46,
   "components": {
     "length": 15.0,
     "gc": 10.0,
     "repeats": -0.54,
     "palindromes": -2.0,
     "homopolymers": -0.0,
+    "BsaI": -1.0,
+    "BsmBI": -1.0,
     "forbidden_motifs": -2.0,
     "ori_recognition": 8.0,
-    "marker_recognition": 6.0,
+    "marker_recognition": -8.0,
     "promoter_terminator": 4.0,
     "burden": 0.0
   }
 }
 ```
 
-Note: ORF prediction for this small demo may be empty depending on thresholds and DB content; backbone signals still contribute to the score.
+### Command Line
 
-## How it works (short) 
+```bash
+# Annotate a plasmid
+uv run plasmidkit annotate tests/data/pUC19.fasta
 
-- Exact DNA motifs using a multi‑pattern scanner (`pyahocorasick`); circular wrap supported
-- ORFs via Prodigal (`pyrodigal`) to ensure protein‑coding potential exists (no protein ID)
-- Sequence heuristics: GC/length/repeats/palindromes/homopolymers; forbidden motifs list
-- Score = synthesis (hygiene) + assembly/maintenance (ori/marker/promoter/terminator/burden)
+# Get detailed output with scores
+uv run plasmidkit annotate tests/data/pUC19.fasta --output report.json
 
-## Data sources
+# View all detected features
+uv run plasmidkit annotate tests/data/pUC19.fasta --verbose
+```
 
-We curate signatures from public sources and record per‑entry citations in `plasmidkit/data/engineered_core_signatures.json`.
+## How It Works
 
-- PlasMapper features API (promoters/terminators/origins): portal https://plasmapper.wishartlab.com/search, API `https://plasmapper.ca/api/features`
-- NCBI ori sequences via query `origin_of_replication[All Fields] AND (bacteria[filter] AND plasmid[filter])` (we ingested `~/Downloads/plasmid_oris.json`, citing `https://www.ncbi.nlm.nih.gov/nuccore/<ACCESSION>`)
-- UniProt (Swiss‑Prot) for reviewed markers (e.g., blaTEM-1 P62593, nptII P00552): `https://rest.uniprot.org/uniprotkb/{accession}`
-- CARD (Comprehensive Antibiotic Resistance Database) protein homolog models: we ingested your curated JSON of bacterial AMR determinants (`~/Downloads/card_bacterial_amr_motifs.json`). PHM entries represent genes conferring resistance by presence (e.g., beta‑lactamases, aminoglycoside‑modifying enzymes, van operon genes). We record CARD as the citation for these markers.
-- SnapGene Standard Features export (user‑provided "Exported Standard Features" .dna files)
-  - Primarily used for engineered backbone motifs: promoters, terminators, replication origins, and common selectable markers
-  - We ingest these as short DNA motifs for fast exact/fuzzy matching; this is not intended to be a comprehensive protein/CDS database
-  - Citations for these entries are recorded as `{ "database": "SnapGene", "source": "Standard Features export" }`
-- pLannotate bundle indices (SnapGene/FPbase/Swiss‑Prot indices; Rfam models) for provenance
+1. **DNA Motif Matching**: Uses `pyahocorasick` for fast multi-pattern scanning of known sequences
+   - Supports fuzzy matching with configurable mismatches
+   - Handles circular plasmids correctly (wrap-around search)
 
-## Caches and large data
+2. **ORF Prediction**: Runs Prodigal (`pyrodigal`) to identify coding regions
+   - Validates that the plasmid has protein-coding potential
+   - No exhaustive protein identification needed
 
-We do not store large database files in git. They are cached under `plasmidkit/data/_cache/` and ignored by `.gitignore`.
+3. **Sequence Analysis**: Evaluates synthesis/assembly properties
+   - GC content, length optimization
+   - Detects repeats, palindromes, homopolymers
+   - Flags forbidden restriction sites
 
-- Default cache directory can be overridden with `PLASMIDKIT_CACHE`.
-- To prefetch or prepare caches for offline use:
+4. **Scoring System**: 
+   ```
+   Total Score = Synthesis Hygiene + Backbone Recognition + Assembly Burden
+   ```
+   - **Synthesis**: length (15), GC (10), minus penalties for repeats/palindromes/homopolymers/forbidden motifs
+   - **Backbone**: ori (8), marker (6), promoter/terminator (4-7)
+   - **Burden**: penalties for high-copy + strong promoter combinations
+
+## Feature Detection
+
+PlasmidKit identifies:
+
+| Feature Type | Detection Method | Examples |
+|-------------|------------------|----------|
+| **rep_origin** | Motif matching | ColE1, pMB1, p15A, pSC101, RSF1030 |
+| **marker** | Motif matching + aliases | AmpR (TEM-1), KanR (nptII), CmR (cat) |
+| **promoter** | Motif matching | lac, T7, CMV, AmpR promoter |
+| **terminator** | Motif matching | rrnB T1, T7 terminator |
+| **cds** | Prodigal ORF prediction | Any plausible coding sequence |
+
+## Data Sources
+
+We curate signatures from public sources, with per-entry citations in `plasmidkit/data/engineered_core_signatures.json`:
+
+- **PlasMapper** features API (promoters/terminators/origins)
+  - Portal: https://plasmapper.wishartlab.com/search
+  - API: `https://plasmapper.ca/api/features`
+
+- **NCBI** ori sequences via query:
+  - `origin_of_replication[All Fields] AND (bacteria[filter] AND plasmid[filter])`
+  - Citation: `https://www.ncbi.nlm.nih.gov/nuccore/<ACCESSION>`
+
+- **UniProt (Swiss-Prot)** for reviewed markers:
+  - Examples: blaTEM-1 (P62593), nptII (P00552)
+  - API: `https://rest.uniprot.org/uniprotkb/{accession}`
+
+- **CARD** (Comprehensive Antibiotic Resistance Database):
+  - Protein homolog models for bacterial AMR determinants
+  - PHM entries: beta-lactamases, aminoglycoside-modifying enzymes, etc.
+
+- **SnapGene** Standard Features export:
+  - Engineered backbone motifs: promoters, terminators, origins, markers
+  - Short DNA motifs for fast exact/fuzzy matching
+  - Citation: `{ "database": "SnapGene", "source": "Standard Features export" }`
+
+- **pLannotate** bundle indices:
+  - SnapGene/FPbase/Swiss-Prot indices
+  - Rfam models for RNA features
+
+## Testing
+
+PlasmidKit includes comprehensive tests that run automatically via GitHub Actions on every push.
+
+**Run tests locally:**
+```bash
+# All tests
+uv run pytest tests/ -v
+
+# With coverage
+uv run pytest tests/ --cov=plasmidkit --cov-report=html
+
+# Specific test
+uv run pytest tests/test_api.py::test_annotate_and_score -v
+```
+
+**Test coverage includes:**
+- Annotation accuracy across multiple plasmids (pUC19, pSC101, etc.)
+- Score calculation and component breakdown
+- Feature detection for ori, markers, promoters, terminators
+- Edge cases and circular sequence handling
+
+## Development
+
+```bash
+# Clone the repository
+git clone https://github.com/McClain-Thiel/plasmid-kit.git
+cd plasmid-kit
+
+# Install with development dependencies
+uv sync
+
+# Run tests
+uv run pytest
+
+# Format code
+uv run black plasmidkit/ tests/
+uv run ruff check plasmidkit/ tests/
+```
+
+## Data Caching
+
+Large database files are not stored in git. They're cached under `plasmidkit/data/_cache/` and ignored by `.gitignore`.
+
+- Default cache directory can be overridden with `PLASMIDKIT_CACHE`
+- To prefetch caches for offline use:
 
 ```bash
 uv run python -m plasmidkit.cli bootstrap --cache-dir plasmidkit/data/_cache
 ```
 
-This warms up the built-in `engineered-core@1.0.0` database (stored in the repo as `plasmidkit/data/engineered_core_signatures.json`). Optional external indices (e.g., BLAST/Rfam/SnapGene/SwissProt) are not included; place them under the cache dir if you have them.
+This warms up the built-in `engineered-core@1.0.0` database. Optional external indices (BLAST/Rfam/SnapGene/SwissProt) can be placed under the cache dir if available.
 
-Note on CDS vs. backbone signals
+## Design Philosophy
 
-- PlasmidKit focuses on engineered backbone recognition (ori, marker presence, promoter/terminator motifs) rather than exhaustive protein identity.
-- CDS features are detected via two complementary routes:
-  - Motif matches for common selectable markers (presence implies function)
-  - ORF prediction (via Prodigal/pyrodigal) to confirm plausible coding potential exists
-- The SnapGene Standard Features import is leveraged to strengthen backbone motif coverage; short or partial CDS fragments from reference maps may not be exhaustively represented as motifs.
+**Focus on Backbone Recognition:**
+- PlasmidKit targets engineered backbone essentials rather than exhaustive protein identification
+- Motif-based detection for known functional elements (fast, interpretable)
+- ORF prediction confirms coding potential exists (no protein ID needed)
 
-## Pushing after history cleanup
+**CDS Detection Strategy:**
+1. **Motif matches** for common selectable markers (presence implies function)
+2. **ORF prediction** (via Prodigal/pyrodigal) to confirm plausible coding regions
 
-If you see a stale info or non fast-forward error after cleaning large files from history, fetch and force-update the remote ref:
+**Why not exhaustive annotation?**
+- Engineered plasmids have predictable backbones
+- Exact/fuzzy motif matching is fast and accurate for known parts
+- Full protein BLAST is slow and often unnecessary for quality assessment
 
-```bash
-git fetch origin
-git push -u origin +main
+## License
+
+See LICENSE file for details.
+
+## Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
+
+## Citation
+
+If you use PlasmidKit in your research, please cite:
+```
+[Citation information to be added]
 ```
