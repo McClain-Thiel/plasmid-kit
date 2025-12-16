@@ -37,6 +37,11 @@ line-length = 100
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
 [tool.setuptools]
 include-package-data = true
 

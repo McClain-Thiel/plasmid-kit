@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from .api import (
-    add_registry,
     annotate,
     annotate_and_score,
+    bootstrap_data,
     export_gff3,
     export_json,
     export_minimal_genbank,
@@ -14,14 +14,14 @@ from .api import (
 )
 
 __all__ = [
-    "add_registry",
-    "annotate",
-    "annotate_and_score",
-    "export_gff3",
-    "export_json",
-    "export_minimal_genbank",
     "load_record",
+    "annotate",
     "score",
+    "annotate_and_score",
+    "export_json",
+    "export_gff3",
+    "export_minimal_genbank",
     "set_cache_dir",
     "set_offline",
+    "bootstrap_data",
 ]

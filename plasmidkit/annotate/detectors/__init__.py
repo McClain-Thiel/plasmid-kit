@@ -16,8 +16,16 @@ def get_detector(name: str):
     return module.detect
 
 
-def run_detectors(sequence: str, db: Mapping[str, object], detectors: Iterable[str] | None = None) -> List[Feature]:
-    order = list(detectors) if detectors else _DEFAULT_ORDER
+def run_detectors(
+    sequence: str,
+    db: Mapping[str, object],
+    detectors: Iterable[str] | None = None,
+    skip_prodigal: bool = False,
+) -> List[Feature]:
+    order = list(detectors) if detectors else list(_DEFAULT_ORDER)
+    if skip_prodigal and "orf_prodigal" in order:
+        order.remove("orf_prodigal")
+
     features: List[Feature] = []
     for name in order:
         detector_fn = get_detector(name)

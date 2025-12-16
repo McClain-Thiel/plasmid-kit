@@ -21,7 +21,6 @@ __all__ = [
     "export_minimal_genbank",
     "set_cache_dir",
     "set_offline",
-    "add_registry",
     "bootstrap_data",
 ]
 
@@ -31,9 +30,10 @@ def annotate(
     db: str = "engineered-core@1.0.0",
     detectors: Iterable[str] | None = None,
     is_sequence: Optional[bool] = None,
+    skip_prodigal: bool = False,
 ) -> List[Feature]:
     artifacts = manager.get_artifacts(db)
-    return annotate_record(record, artifacts, detectors, is_sequence=is_sequence)
+    return annotate_record(record, artifacts, detectors, is_sequence=is_sequence, skip_prodigal=skip_prodigal)
 
 
 def score(
@@ -53,9 +53,12 @@ def annotate_and_score(
     db: str = "engineered-core@1.0.0",
     detectors: Iterable[str] | None = None,
     is_sequence: Optional[bool] = None,
+    skip_prodigal: bool = False,
 ) -> Mapping[str, object]:
     normalized_record = record if isinstance(record, SeqRecord) else load_record(record, is_sequence=is_sequence)
-    annotations = annotate(normalized_record, db=db, detectors=detectors)
+    annotations = annotate(
+        normalized_record, db=db, detectors=detectors, skip_prodigal=skip_prodigal
+    )
     score_report = score(normalized_record, annotations=annotations, db=db)
     return {
         "sequence_id": normalized_record.id,
@@ -68,7 +71,6 @@ def annotate_and_score(
 
 set_cache_dir = manager.set_cache_dir
 set_offline = manager.set_offline
-add_registry = manager.add_registry
 
 
 def bootstrap_data(cache_dir: Optional[str] = None, offline: Optional[bool] = None) -> Mapping[str, object]:
