@@ -1,6 +1,8 @@
 # PlasmidKit
 
 [![Tests](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml/badge.svg)](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml)
+[![PyPI Publish](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/publish.yml/badge.svg)](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/publish.yml)
+[![PyPI version](https://img.shields.io/pypi/v/plasmidkit)](https://pypi.org/project/plasmidkit/)
 
 PlasmidKit is a fast Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly "makeability" score. It focuses on engineered plasmids (2–10 kb typical), validates that backbone essentials are present, and produces an interpretable quality score.
 
