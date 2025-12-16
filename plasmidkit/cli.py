@@ -18,13 +18,14 @@ def annotate(
     input: Path = typer.Argument(..., help="Input FASTA/GenBank file"),
     db: str = typer.Option("engineered-core@1.0.0", help="Database identifier"),
     detectors: Optional[str] = typer.Option(None, help="Comma-separated detector list"),
+    skip_prodigal: bool = typer.Option(False, help="Skip slow ORF detection"),
     out_json: Optional[Path] = typer.Option(None, help="Write annotations+score JSON"),
     out_gff: Optional[Path] = typer.Option(None, help="Write annotations as GFF3"),
     out_gb: Optional[Path] = typer.Option(None, help="Write annotations as minimal GenBank"),
 ) -> None:
     record = api.load_record(input)
     detector_list = detectors.split(",") if detectors else None
-    annotations = api.annotate(record, db=db, detectors=detector_list)
+    annotations = api.annotate(record, db=db, detectors=detector_list, skip_prodigal=skip_prodigal)
     result = {
         "sequence_id": record.id,
         "length": len(record.seq),
@@ -45,11 +46,12 @@ def score(
     input: Path = typer.Argument(..., help="Input FASTA/GenBank file"),
     db: str = typer.Option("engineered-core@1.0.0", help="Database identifier"),
     detectors: Optional[str] = typer.Option(None, help="Comma-separated detector list"),
+    skip_prodigal: bool = typer.Option(False, help="Skip slow ORF detection"),
     out_json: Optional[Path] = typer.Option(None, help="Write annotations+score JSON"),
 ) -> None:
     record = api.load_record(input)
     detector_list = detectors.split(",") if detectors else None
-    annotations = api.annotate(record, db=db, detectors=detector_list)
+    annotations = api.annotate(record, db=db, detectors=detector_list, skip_prodigal=skip_prodigal)
     score = api.score(record, annotations=annotations, db=db)
     result = {
         "sequence_id": record.id,

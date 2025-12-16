@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Iterable, Iterator, Optional
 
@@ -24,30 +25,37 @@ def normalise_sequence(sequence: str) -> str:
 def load_record(source: str | Path | SeqRecord, is_sequence: Optional[bool] = None) -> SeqRecord:
     if isinstance(source, SeqRecord):
         return source
+    
     # Path objects are always treated as files
     if isinstance(source, Path):
-        if source.exists():
-            return next(SeqIO.parse(str(source), infer_format(source)))
-        # If an explicit Path does not exist, fall back to sequence interpretation
-        return SeqRecord(Seq(normalise_sequence(str(source))), id="sequence")
+        if not source.exists():
+            raise FileNotFoundError(f"File not found: {source}")
+        return next(SeqIO.parse(str(source), infer_format(source)))
+
     if isinstance(source, str):
         # If caller specifies interpretation, honor it
         if is_sequence is True:
             return SeqRecord(Seq(normalise_sequence(source)), id="sequence")
+        
         if is_sequence is False:
             path = Path(source)
-            if path.exists():
-                return next(SeqIO.parse(str(path), infer_format(path)))
-            # Backward-compatible fallback: interpret as sequence if file not found
-            return SeqRecord(Seq(normalise_sequence(source)), id="sequence")
-        # Heuristic when not specified: long strings are likely raw sequences
-        if len(source) >= 1000:
-            return SeqRecord(Seq(normalise_sequence(source)), id="sequence")
-        # Otherwise prefer file if present, else interpret as sequence
+            if not path.exists():
+                raise FileNotFoundError(f"File not found: {source}")
+            return next(SeqIO.parse(str(path), infer_format(path)))
+
+        # Heuristic when not specified: 
+        # If it looks like a file path that exists, treat as file.
         path = Path(source)
         if path.exists():
             return next(SeqIO.parse(str(path), infer_format(path)))
-        return SeqRecord(Seq(normalise_sequence(source)), id="sequence")
+        
+        # If it's not a file, do not guess. Require explicit is_sequence=True.
+        # This prevents ambiguity and potential issues with long strings being treated as paths.
+        raise ValueError(
+            "Input string is not an existing file. "
+            "If you are passing a raw DNA sequence, you must specify 'is_sequence=True'."
+        )
+
     raise TypeError(f"Unsupported source type: {type(source)!r}")
 
 

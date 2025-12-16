@@ -46,6 +46,13 @@ record = pk.load_record("tests/data/pUC19.fasta")
 # Annotate features
 annotations = pk.annotate(record)
 
+# Fast annotation (skip ORF prediction)
+annotations_fast = pk.annotate(record, skip_prodigal=True)
+
+# Annotate a raw sequence string (must specify is_sequence=True)
+raw_seq = "ATCG..."
+annotations_raw = pk.annotate(raw_seq, is_sequence=True)
+
 # Calculate quality score
 score_report = pk.score(record, annotations=annotations)
 
@@ -137,6 +144,9 @@ for ann in annotations[:3]:
 ```bash
 # Annotate a plasmid
 uv run plasmidkit annotate tests/data/pUC19.fasta
+
+# Skip slow ORF prediction
+uv run plasmidkit annotate tests/data/pUC19.fasta --skip-prodigal
 
 # Get detailed output with scores
 uv run plasmidkit annotate tests/data/pUC19.fasta --output report.json

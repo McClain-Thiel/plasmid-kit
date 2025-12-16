@@ -18,7 +18,8 @@ def annotate_record(
     db: Mapping[str, object],
     detectors: Iterable[str] | None = None,
     is_sequence: Optional[bool] = None,
+    skip_prodigal: bool = False,
 ) -> List[Feature]:
     normalized_record = record if isinstance(record, SeqRecord) else load_record(record, is_sequence=is_sequence)
     sequence = str(normalized_record.seq)
-    return run_detectors(sequence, db, detectors)
+    return run_detectors(sequence, db, detectors, skip_prodigal=skip_prodigal)
