@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, clean-up ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, clean-up ]
   workflow_dispatch:
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
     
     steps:
     - uses: actions/checkout@v4
@@ -28,15 +28,15 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
     
     - name: Install dependencies
-      run: |
-        uv sync --all-extras
-        uv pip install pytest pytest-cov
+      run: uv sync --all-extras --dev
     
-    - name: Run tests
+    - name: Run tests with coverage
       run: |
-        uv run pytest tests/ -v --tb=short
+        uv run pytest tests/ -v --cov=plasmidkit --cov-report=xml
     
-    - name: Test import
-      run: |
-        uv run python -c "import plasmidkit; print(f'PlasmidKit version loaded successfully')"
-
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: McClain-Thiel/plasmid-kit
+      continue-on-error: true

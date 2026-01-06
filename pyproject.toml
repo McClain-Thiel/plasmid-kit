@@ -39,6 +39,8 @@ build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings[python]>=1.0.0",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
 ]

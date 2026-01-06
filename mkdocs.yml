@@ -1,0 +1,46 @@
+site_name: PlasmidKit
+site_description: Fast plasmid annotation and analysis library.
+site_url: https://mcclain-thiel.github.io/plasmid-kit/
+repo_url: https://github.com/McClain-Thiel/plasmid-kit
+repo_name: McClain-Thiel/plasmid-kit
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+
+nav:
+  - Home: index.md
+  - CLI: cli.md
+  - Python API: api.md
+  - Contributing: contributing.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
