@@ -3,8 +3,23 @@
 [![Tests](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml/badge.svg)](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/tests.yml)
 [![PyPI Publish](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/publish.yml/badge.svg)](https://github.com/McClain-Thiel/plasmid-kit/actions/workflows/publish.yml)
 [![PyPI version](https://img.shields.io/pypi/v/plasmidkit)](https://pypi.org/project/plasmidkit/)
+[![Documentation](https://img.shields.io/badge/docs-live-blue)](https://mcclain-thiel.github.io/plasmid-kit/)
 
-PlasmidKit is a fast Python library and CLI for annotating plasmid sequences and estimating a synthesis/assembly "makeability" score. It focuses on engineered plasmids (2–10 kb typical), validates that backbone essentials are present, and produces an interpretable quality score.
+**Fast Python library and CLI for comprehensive plasmid annotation and analysis.**
+
+## Design Philosophy
+
+Most plasmid annotation tools suffer from two major problems:
+1. They are just CLI wrappers around "weird" bioinformatics tools that are hard to install and use.
+2. They require you to bring your own database, leaving the burden of curation on the user.
+
+**PlasmidKit is different.** It comes with a built-in, highly curated database of over 1,000 origins of replication (DoriC) and 7,000+ resistance markers (AMRFinderPlus). It uses fast, native Python implementations for motif matching and analysis, ensuring it works out of the box with zero configuration.
+
+**Key Features:**
+- **Curated Database:** Includes DoriC 12.1 and NCBI AMRFinderPlus data.
+- **Intelligent Annotation:** Prioritizes high-confidence markers over generic open reading frames (ORFs).
+- **Fast:** Optimized for 2–20 kb engineered plasmids.
+- **Easy to Use:** Simple Python API and CLI.
 
 ## Quick Start
 
@@ -19,21 +34,6 @@ uv run plasmidkit --help
 pip install -e .
 ```
 
-## What It Evaluates
-
-**Backbone Components:**
-- **Origins of replication** (e.g., ColE1/pMB1, p15A, pSC101, RSF)
-- **Selectable markers** (e.g., AmpR/blaTEM, KanR/nptII, CmR/cat)
-- **Promoters** (e.g., lac, T7, CMV) and **terminators**
-- **ORFs** via Prodigal to confirm coding potential exists
-
-**Synthesis & Assembly Hygiene:**
-- Length optimization (2–6 kb ideal)
-- GC content (45–55% ideal)
-- Repeat sequences and palindromes
-- Homopolymer runs
-- Forbidden motifs (e.g., BsaI, BsmBI, NotI)
-
 ## Example Usage
 
 ### Python API
@@ -45,140 +45,32 @@ import plasmidkit as pk
 # Load a plasmid sequence
 record = pk.load_record("tests/data/pUC19.fasta")
 
-# Annotate features
-annotations = pk.annotate(record)
-
-# Fast annotation (skip ORF prediction)
-annotations_fast = pk.annotate(record, skip_prodigal=True)
-
-# Annotate a raw sequence string (must specify is_sequence=True)
-raw_seq = "ATCG..."
-annotations_raw = pk.annotate(raw_seq, is_sequence=True)
-
-# Calculate quality score
-score_report = pk.score(record, annotations=annotations)
+# Analyze plasmid (returns a report dictionary)
+report = pk.analyze(record)
 
 # Display results
-print(f"Found {len(annotations)} features")
-print(f"Overall score: {score_report['total']:.1f}/100")
+print(f"Sequence: {report['sequence_id']}")
+print(f"Length: {report['length']} bp")
+print(f"GC Content: {report['gc_content']}%")
+print(f"Features: {report['feature_counts']}")
 
 # Show first few annotations
-for ann in annotations[:3]:
-    print(f"  {ann.type}: {ann.id} at {ann.start}-{ann.end}")
-```
-
-### Real Output (pUC19)
-
-**Annotations (first 5):**
-```json
-[
-  {
-    "type": "rep_origin",
-    "id": "ColE1",
-    "start": 2314,
-    "end": 2903,
-    "strand": "+",
-    "method": "motif_fuzzy",
-    "confidence": 1.0
-  },
-  {
-    "type": "rep_origin",
-    "id": "pBR322_origin",
-    "start": 2298,
-    "end": 2917,
-    "strand": "-",
-    "method": "motif_fuzzy",
-    "confidence": 1.0
-  },
-  {
-    "type": "marker",
-    "id": "TEM-116",
-    "start": 1283,
-    "end": 2144,
-    "strand": "+",
-    "method": "motif_fuzzy",
-    "confidence": 1.0
-  },
-  {
-    "type": "promoter",
-    "id": "AmpR_promoter_4",
-    "start": 1178,
-    "end": 1283,
-    "strand": "+",
-    "method": "motif_fuzzy",
-    "confidence": 1.0
-  },
-  {
-    "type": "promoter",
-    "id": "lac_promoter",
-    "start": 540,
-    "end": 569,
-    "strand": "-",
-    "method": "motif_fuzzy",
-    "confidence": 1.0
-  }
-]
-```
-
-**Score Report:**
-```json
-{
-  "total": 22.46,
-  "components": {
-    "length": 15.0,
-    "gc": 10.0,
-    "repeats": -0.54,
-    "palindromes": -2.0,
-    "homopolymers": -0.0,
-    "BsaI": -1.0,
-    "BsmBI": -1.0,
-    "forbidden_motifs": -2.0,
-    "ori_recognition": 8.0,
-    "marker_recognition": -8.0,
-    "promoter_terminator": 4.0,
-    "burden": 0.0
-  }
-}
+for ann in report['annotations'][:3]:
+    print(f"  {ann['type']}: {ann['id']} at {ann['start']}-{ann['end']}")
 ```
 
 ### Command Line
 
 ```bash
-# Annotate a plasmid
-uv run plasmidkit annotate tests/data/pUC19.fasta
+# Analyze a plasmid and get a report
+uv run plasmidkit analyze tests/data/pUC19.fasta
 
-# Skip slow ORF prediction
-uv run plasmidkit annotate tests/data/pUC19.fasta --skip-prodigal
+# Save full analysis to JSON
+uv run plasmidkit analyze tests/data/pUC19.fasta --out-json report.json
 
-# Get detailed output with scores
-uv run plasmidkit annotate tests/data/pUC19.fasta --output report.json
-
-# View all detected features
-uv run plasmidkit annotate tests/data/pUC19.fasta --verbose
+# Annotate and export to GFF3
+uv run plasmidkit annotate tests/data/pUC19.fasta --out-gff output.gff
 ```
-
-## How It Works
-
-1. **DNA Motif Matching**: Uses `pyahocorasick` for fast multi-pattern scanning of known sequences
-   - Supports fuzzy matching with configurable mismatches
-   - Handles circular plasmids correctly (wrap-around search)
-
-2. **ORF Prediction**: Runs Prodigal (`pyrodigal`) to identify coding regions
-   - Validates that the plasmid has protein-coding potential
-   - No exhaustive protein identification needed
-
-3. **Sequence Analysis**: Evaluates synthesis/assembly properties
-   - GC content, length optimization
-   - Detects repeats, palindromes, homopolymers
-   - Flags forbidden restriction sites
-
-4. **Scoring System**: 
-   ```
-   Total Score = Synthesis Hygiene + Backbone Recognition + Assembly Burden
-   ```
-   - **Synthesis**: length (15), GC (10), minus penalties for repeats/palindromes/homopolymers/forbidden motifs
-   - **Backbone**: ori (8), marker (6), promoter/terminator (4-7)
-   - **Burden**: penalties for high-copy + strong promoter combinations
 
 ## Feature Detection
 
@@ -186,11 +78,11 @@ PlasmidKit identifies:
 
 | Feature Type | Detection Method | Examples |
 |-------------|------------------|----------|
-| **rep_origin** | Motif matching | ColE1, pMB1, p15A, pSC101, RSF1030 |
-| **marker** | Motif matching + aliases | AmpR (TEM-1), KanR (nptII), CmR (cat) |
+| **rep_origin** | Motif matching (DoriC) | ColE1, pMB1, p15A, pSC101, RSF1030 |
+| **marker** | Motif matching (AMRFinder) | AmpR (TEM-1), KanR (nptII), CmR (cat) |
 | **promoter** | Motif matching | lac, T7, CMV, AmpR promoter |
 | **terminator** | Motif matching | rrnB T1, T7 terminator |
-| **cds** | Prodigal ORF prediction | Any plausible coding sequence |
+| **cds** | Prodigal ORF prediction | Any plausible coding sequence (clobbered by specific markers if overlapping) |
 
 ## Data Sources
 
@@ -241,16 +133,7 @@ uv run pytest tests/ -v
 
 # With coverage
 uv run pytest tests/ --cov=plasmidkit --cov-report=html
-
-# Specific test
-uv run pytest tests/test_api.py::test_annotate_and_score -v
 ```
-
-**Test coverage includes:**
-- Annotation accuracy across multiple plasmids (pUC19, pSC101, etc.)
-- Score calculation and component breakdown
-- Feature detection for ori, markers, promoters, terminators
-- Edge cases and circular sequence handling
 
 ## Development
 
@@ -269,35 +152,6 @@ uv run pytest
 uv run black plasmidkit/ tests/
 uv run ruff check plasmidkit/ tests/
 ```
-
-## Data Caching
-
-Large database files are not stored in git. They're cached under `plasmidkit/data/_cache/` and ignored by `.gitignore`.
-
-- Default cache directory can be overridden with `PLASMIDKIT_CACHE`
-- To prefetch caches for offline use:
-
-```bash
-uv run python -m plasmidkit.cli bootstrap --cache-dir plasmidkit/data/_cache
-```
-
-This warms up the built-in `engineered-core@1.0.0` database. Optional external indices (BLAST/Rfam/SnapGene/SwissProt) can be placed under the cache dir if available.
-
-## Design Philosophy
-
-**Focus on Backbone Recognition:**
-- PlasmidKit targets engineered backbone essentials rather than exhaustive protein identification
-- Motif-based detection for known functional elements (fast, interpretable)
-- ORF prediction confirms coding potential exists (no protein ID needed)
-
-**CDS Detection Strategy:**
-1. **Motif matches** for common selectable markers (presence implies function)
-2. **ORF prediction** (via Prodigal/pyrodigal) to confirm plausible coding regions
-
-**Why not exhaustive annotation?**
-- Engineered plasmids have predictable backbones
-- Exact/fuzzy motif matching is fast and accurate for known parts
-- Full protein BLAST is slow and often unnecessary for quality assessment
 
 ## License
 
