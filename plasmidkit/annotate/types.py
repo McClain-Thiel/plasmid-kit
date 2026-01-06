@@ -14,7 +14,7 @@ class Feature:
     end: int
     strand: str = "+"
     method: str = "heuristic"
-    confidence: float = 0.5
+    confidence: Optional[float] = None
     evidence: Dict[str, object] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, object]:

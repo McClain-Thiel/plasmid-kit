@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from .api import (
+    analyze,
     annotate,
-    annotate_and_score,
     bootstrap_data,
     export_gff3,
     export_json,
     export_minimal_genbank,
     load_record,
-    score,
     set_cache_dir,
     set_offline,
 )
@@ -16,8 +15,7 @@ from .api import (
 __all__ = [
     "load_record",
     "annotate",
-    "score",
-    "annotate_and_score",
+    "analyze",
     "export_json",
     "export_gff3",
     "export_minimal_genbank",

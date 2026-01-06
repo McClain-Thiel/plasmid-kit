@@ -19,50 +19,53 @@ def annotate(
     db: str = typer.Option("engineered-core@1.0.0", help="Database identifier"),
     detectors: Optional[str] = typer.Option(None, help="Comma-separated detector list"),
     skip_prodigal: bool = typer.Option(False, help="Skip slow ORF detection"),
-    out_json: Optional[Path] = typer.Option(None, help="Write annotations+score JSON"),
+    out_json: Optional[Path] = typer.Option(None, help="Write annotations to JSON"),
     out_gff: Optional[Path] = typer.Option(None, help="Write annotations as GFF3"),
     out_gb: Optional[Path] = typer.Option(None, help="Write annotations as minimal GenBank"),
 ) -> None:
+    """
+    Annotate plasmid features and write to various formats.
+    """
     record = api.load_record(input)
     detector_list = detectors.split(",") if detectors else None
     annotations = api.annotate(record, db=db, detectors=detector_list, skip_prodigal=skip_prodigal)
-    result = {
-        "sequence_id": record.id,
-        "length": len(record.seq),
-        "annotations": [feature.to_dict() for feature in annotations],
-        "db": db,
-    }
+    
+    # Simple list wrapper for JSON output
+    result = [feature.to_dict() for feature in annotations]
+    
     if out_json:
         export_json(result, out_json)
     if out_gff:
         export_gff3(record, annotations, out_gff)
     if out_gb:
         export_minimal_genbank(record, annotations, out_gb)
+    
+    # Just echo the count or summary to CLI to avoid flooding stdout with JSON by default?
+    # Original behavior echoed JSON.
     typer.echo(json.dumps(result, indent=2))
 
 
 @app.command()
-def score(
+def analyze(
     input: Path = typer.Argument(..., help="Input FASTA/GenBank file"),
     db: str = typer.Option("engineered-core@1.0.0", help="Database identifier"),
     detectors: Optional[str] = typer.Option(None, help="Comma-separated detector list"),
     skip_prodigal: bool = typer.Option(False, help="Skip slow ORF detection"),
-    out_json: Optional[Path] = typer.Option(None, help="Write annotations+score JSON"),
+    out_json: Optional[Path] = typer.Option(None, help="Write full analysis report to JSON"),
 ) -> None:
+    """
+    Analyze a plasmid sequence and produce a comprehensive report.
+    Includes GC content, feature counts, and resolved annotations.
+    """
     record = api.load_record(input)
     detector_list = detectors.split(",") if detectors else None
-    annotations = api.annotate(record, db=db, detectors=detector_list, skip_prodigal=skip_prodigal)
-    score = api.score(record, annotations=annotations, db=db)
-    result = {
-        "sequence_id": record.id,
-        "length": len(record.seq),
-        "annotations": [feature.to_dict() for feature in annotations],
-        "score": score,
-        "db": db,
-    }
+    
+    report = api.analyze(record, db=db, detectors=detector_list, skip_prodigal=skip_prodigal)
+    
     if out_json:
-        export_json(result, out_json)
-    typer.echo(json.dumps(result, indent=2))
+        export_json(report, out_json)
+    
+    typer.echo(json.dumps(report, indent=2))
 
 
 @app.command()
