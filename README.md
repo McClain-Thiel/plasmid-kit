@@ -196,6 +196,15 @@ PlasmidKit identifies:
 
 We curate signatures from public sources, with per-entry citations in `plasmidkit/data/engineered_core_signatures.json`:
 
+- **DoriC 12.1** (Database of Replication Origins):
+  - Over 1,000 plasmid origins of replication
+  - Source: http://tubic.tju.edu.cn/doric/
+
+- **NCBI AMRFinderPlus**:
+  - Comprehensive database of antimicrobial resistance genes
+  - Includes over 6,000 resistance markers grouped by gene family
+  - Source: https://github.com/ncbi/amr
+
 - **PlasMapper** features API (promoters/terminators/origins)
   - Portal: https://plasmapper.wishartlab.com/search
   - API: `https://plasmapper.ca/api/features`
